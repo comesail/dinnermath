@@ -1,0 +1,941 @@
+\
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DinnerMath — Slice Calculator (v9 b9-fix25)</title>
+<meta name="description" content="See how many pieces your pan makes. Smart cuts for brownies, bars, sheet cake, lasagna, and round pies/cakes — or enter a target number of pieces.">
+<style>
+  :root{
+    --ink:#1f1f21; --muted:#6e7176; --line:#e5e7eb; --bg:#f8f9fa; --card:#ffffff; --shadow:0 10px 20px rgba(0,0,0,.06);
+    --accent:#111827;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif}
+  .wrap{max-width:1160px;margin:40px auto 96px;padding:0 20px}
+  h1{font-size:38px;margin:0 0 8px;letter-spacing:-0.01em;text-align:center}
+  .lede{color:var(--muted);font-size:16px;margin:0 0 20px;text-align:center}
+
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:start}
+  @media(max-width:980px){.tiles{grid-template-columns:1fr}}
+
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;min-height:520px}
+  .tile-body{padding:16px 16px 20px;display:flex;flex-direction:column;gap:12px}
+  .section-label{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700}
+  .hint{font-size:12px;color:var(--muted)}
+
+  .step-head{display:grid;grid-template-columns:120px 1fr;column-gap:10px;align-items:end;margin-bottom:6px}
+  .step-colL{display:flex;flex-direction:column;gap:0;align-items:flex-start}
+  .step-label{font-weight:800;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#6b7280;line-height:1}
+  .step-num{font-weight:800;color:#111827;font-size:137px;line-height:1;transform:translateY(6px)}
+  .step-q{display:flex;flex-direction:column;gap:2px;margin:0;align-self:end;line-height:1.05}
+  .step-q span{display:block;font-weight:800;font-size:28px;letter-spacing:.06em;text-transform:uppercase;color:#111827}
+
+  .choice-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  @media(max-width:520px){.choice-grid{grid-template-columns:1fr}}
+  .choice{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);cursor:pointer;min-height:160px;box-shadow:0 6px 14px rgba(0,0,0,.04);background:#eef2f7}
+  .choice .title{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);background:rgba(255,255,255,.9);border:1px solid var(--line);border-radius:12px;padding:6px 12px;font-weight:800}
+  .choice .art{position:absolute;inset:0; width:100%;height:100%;object-fit:cover;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+
+  .choice.selected{outline:3px solid #aeb3bb}
+
+  .pill, input[type="number"], button.pill{
+    border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:15px;background:#fff;outline:none;
+    transition:box-shadow .15s ease, transform .03s ease, border-color .15s ease; line-height:1.2; color:var(--ink);
+  }
+  .pill{display:inline-flex;align-items:center;justify-content:center;cursor:pointer;margin-right:8px;margin-bottom:8px;user-select:none}
+  .pill:hover{background:#f3f4f6}
+  .pill.active{border-color:#b9bcc2;box-shadow:0 0 0 3px rgba(0,0,0,0.04)}
+
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:760px){.row{grid-template-columns:1fr}}
+
+  .result-box{border:1px solid var(--line);border-radius:14px;padding:16px;background:#fff}
+  .big{font-size:30px;font-weight:800;letter-spacing:-0.01em}
+  .micro{font-size:14px;color:var(--muted)}
+
+  .grid-mini{display:grid;gap:3px;margin-top:12px}
+  .cell{background:#e9ecf2;border:1px solid var(--line);height:22px;border-radius:6px}
+  .cell.edge{background:#dfe6f0}
+  .legend{font-size:12px;color:#6b7280;margin-top:8px}
+
+  .list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+  .option{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff;cursor:pointer}
+  .option:hover{background:#f3f4f6;transform:translateY(-1px)}
+  .option.recommended{border-color:#b9bcc2}
+  .option .title{font-weight:700;margin-bottom:4px;font-size:15px;letter-spacing:-0.01em}
+  .option .meta{font-size:14px;color:var(--muted)}
+
+  .stack{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
+  @media(max-width:980px){.stack{grid-template-columns:1fr}}
+
+  .finder .btn-primary{display:block;text-align:center;border-radius:12px;padding:12px 14px;border:1px solid var(--line);background:#2e2f33;color:#fff;font-weight:600;text-decoration:none}
+  .finder .alt-links{display:flex;gap:12px;margin-top:10px;flex-wrap:wrap}
+  .finder .alt-links a{font-size:14px;text-decoration:none;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff}
+
+  .footer{font-size:12px;color:var(--muted);margin-top:28px;line-height:1.5;text-align:center}
+
+  .status-line{ margin-top:10px; font-size:0.95rem; color:#333; opacity:.85; }
+  .tools-row{ margin-top:10px; display:flex; gap:10px; }
+  .btn{ border:1px solid var(--line); background:#fff; border-radius:10px; padding:10px 12px; cursor:pointer; }
+
+  #rectInputs input[type="number"],
+  #roundInputs input[type="number"]{ max-width: 240px; width: 100%; }
+
+  .pill[aria-pressed="true"]{ outline:1px solid var(--ink,#111); }
+
+  @media print{
+    body *{ visibility:hidden !important; }
+    #results-card, #results-card *{ visibility:visible !important; }
+    #results-card{ position:absolute; left:0; top:0; width:100%; }
+    #print-footer{ display:block !important; margin-top:12px; }
+  }
+
+/* Ensure three tiles left→right on desktop */
+.tiles{ display:grid; gap:24px; }
+@media (min-width: 1024px){
+  .tiles{ grid-template-columns: 1fr 1fr 1fr; }
+}
+</style>
+<script>
+/* Wix Media URLs for Step-1 tiles */
+const IMG_MAP = {
+  brownies:   'https://static.wixstatic.com/media/a330f0_dce072984cd14f66b698cf78ec7e9251~mv2.jpg',
+  sheet:      'https://static.wixstatic.com/media/a330f0_e613e401b9844141b8142b174c57d3f3~mv2.jpg',
+  roundcake:  'https://static.wixstatic.com/media/a330f0_130c3b5738a144c180cf843e72242aac~mv2.jpg',
+  pie:        'https://static.wixstatic.com/media/a330f0_8ff6e388afb24b608c1bac6026aac6e3~mv2.jpg',
+  cornbread:  'https://static.wixstatic.com/media/a330f0_eb18cbfef129445b888f31a33caeed17~mv2.jpg',
+  lasagna:    'https://static.wixstatic.com/media/a330f0_e1e117f7a24a4b43b3f9423fc55f84e3~mv2.jpg',
+  roundother: 'https://static.wixstatic.com/media/a330f0_b91f568a794140e393ec7a6ea9644f4d~mv2.jpg'
+};
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.querySelectorAll('#tile1 .choice img.art[data-key]').forEach(img=>{
+    const url = IMG_MAP[img.dataset.key];
+    if (url) img.src = url;
+  });
+});
+</script>
+</head>
+<body>
+<div class="wrap">
+  <h1>Slice Calculator</h1>
+  <p class="lede">See how many pieces your pan makes with our Slice Calculator. Whether you're baking brownies, cookie bars, sheet cake, cornbread, baked pasta, or pie, this tool shows how many slices you can cut from any pan size — or how to cut it to get the exact number you need. Perfect for home bakers, party planners, and anyone wondering how far one pan will go.</p>
+
+  <div class="tiles">
+    <!-- Tile 1 -->
+    <section class="tile" id="tile1">
+  <div class="tile-body">
+    <div class="step-head">
+      <div class="step-colL">
+        <div class="step-label">STEP</div>
+        <div class="step-num">1</div>
+      </div>
+      <div class="step-q"><span>What are you slicing?</span></div>
+    </div>
+
+    <div class="choice-grid">
+      <div class="choice" data-make="brownies"    data-shape="rect"  data-slug="brownie-slice-calculator"   data-noun="slices"  tabindex="0" title="brownies, blondies, cookie bars, lemon bars">
+        <img data-img="hero-brownies-1600w-q72.jpg" class="art" alt="Brownies & bars" loading="lazy" />
+        <div class="title">Brownies & Bars</div>
+      </div>
+      <div class="choice" data-make="sheet-cake"  data-shape="rect"  data-slug="sheet-cake-slice-calculator" data-noun="slices"  tabindex="0" title="party cake, birthday cake, snack cake">
+        <img data-img="cake-dinnermath.jpg" class="art" alt="Sheet cake" loading="lazy" />
+        <div class="title">Sheet Cake</div>
+      </div>
+      <div class="choice" data-make="round-cake"  data-shape="round" data-slug="round-cake-slice-calculator" data-noun="slices"  tabindex="0" title="layer cake, cheesecake">
+        <img data-img="hero-cheesecake-1600w-q72.jpg" class="art" alt="Round cake / cheesecake" loading="lazy" />
+        <div class="title">Round Cake</div>
+      </div>
+      <div class="choice" data-make="pie"         data-shape="round" data-slug="pie-slice-calculator"        data-noun="slices"  tabindex="0" title="pies, quiches, tarts">
+        <img data-img="apple_pie_dinnermath.jpg" class="art" alt="Pie or tart" loading="lazy" />
+        <div class="title">Pie / Tart</div>
+      </div>
+      <div class="choice" data-make="lasagna"     data-shape="rect"  data-slug="lasagna-piece-calculator"    data-noun="pieces"  tabindex="0" title="lasagna, baked ziti, casserole">
+        <img data-img="parnis-azimi-GWWOvuVB1NI-unsplash.jpg" class="art" alt="Lasagna / baked pasta" loading="lazy" />
+        <div class="title">Lasagna / Baked Pasta</div>
+      </div>
+      <div class="choice" data-make="cornbread"   data-shape="rect"  data-slug="cornbread-piece-calculator"  data-noun="pieces"  tabindex="0" title="cornbread, cobbler, baked dessert">
+        <img data-img="berry_crumble_dinnermath.jpg" class="art" alt="Cornbread or cobbler" loading="lazy" />
+        <div class="title">Cornbread / Cobbler</div>
+      </div>
+      <div class="choice" data-make="round-other" data-shape="round" data-slug="round-dish-slice-calculator" data-noun="slices"  tabindex="0" title="frittata, deep-dish pizza, quiche">
+        <img data-img="pinar-kucuk-Ae7jQFDTPk4-unsplash.jpg" class="art" alt="Other round dish" loading="lazy" />
+        <div class="title">Other Round Dish</div>
+      </div>
+    </div>
+
+    <p id="status-make" class="status-line">Selected: —</p>
+  </div><!-- /.tile-body -->
+</section><!-- /#tile1 -->
+<!-- next line is the opening of Tile 2 -->
+<section class="tile" id="tile2">
+      <div class="tile-body">
+        <div class="step-head">
+          <div class="step-colL"><div class="step-label">STEP</div><div class="step-num">2</div></div>
+          <div class="step-q"><span>What is the shape and size of your pan?</span></div>
+        </div>
+
+        <!-- Shape toggle pills (insert above preset buttons) -->
+        <div class="pill" id="shape-rect" aria-pressed="true">Rectangle / Square</div>
+        <div class="pill" id="shape-round" aria-pressed="false">Round</div>
+
+        <div>
+          <button class="pill" data-preset="8x8">8 x 8 in</button>
+          <button class="pill" data-preset="9x13">9 x 13 in</button>
+          <button class="pill" data-preset="half">Half sheet 13 x 18 in</button>
+          <button class="pill" data-preset="full">Full sheet 18 x 26 in</button>
+          <button class="pill" data-preset="r9">Round 9 in</button>
+          <button class="pill" data-preset="r10">Round 10 in</button>
+        </div>
+        <div class="hint">Do not see your size? Enter it below.</div>
+
+        <p class="hint" id="rect-order-hint">Long side first, short side second.</p>
+        <div class="row" id="rectInputs">
+          <div>
+            <div class="section-label">LENGTH (IN) — enter the LONG side</div>
+            <input id="panL" type="number" step="0.1" min="1" value="" placeholder="e.g., 13">
+          </div>
+          <div>
+            <div class="section-label">WIDTH (IN) — enter the SHORT side</div>
+            <input id="panW" type="number" step="0.1" min="1" value="" placeholder="e.g., 9">
+          </div>
+        </div>
+
+        <div class="row" id="roundInputs" style="display:none">
+          <div>
+            <div class="section-label">Diameter (in)</div>
+            <input id="panD" type="number" step="0.1" min="4" value="">
+          </div>
+        </div>
+        <p id="status-pan" class="status-line">Selected pan: —</p>
+      </div>
+    </section>
+
+    <!-- Tile 3 -->
+    <section class="tile" id="tile3">
+      <div class="tile-body">
+        <div class="step-head">
+          <div class="step-colL"><div class="step-label">STEP</div><div class="step-num">3</div></div>
+          <div class="step-q"><span>Your</span><span>Cutting</span><span>Guide</span></div>
+        </div>
+
+        <div class="result-box" id="results-card" aria-live="polite">
+          <div class="big" id="bigTotal">0 pieces</div>
+          <div class="micro" id="bigMeta">about 0 x 0 in each (0 x 0 cut)</div>
+          <div id="round-ruler"></div>
+          <div class="grid-mini" id="miniGrid"></div>
+          <div class="legend" id="legend" style="display:none"></div>
+          <div class="legend" id="legend2" style="display:block">You do not need a ruler. Aim for about this size; edge pieces can be a little smaller.</div>
+          <div class="tools-row">
+            <button id="btn-print" class="btn">Print cut guide</button>
+          </div>
+          <div id="print-footer" class="legend" style="display:none">
+            Thank you for using DinnerMath’s Slice Calculator.
+            Estimates only—confirm your pan’s interior size and cut spacing.
+            © 2025 DinnerMath.
+          </div>
+        </div>
+
+        <div class="list" id="optionsList"></div>
+
+        <div class="row" style="margin-top:10px">
+          <div>
+            <div class="section-label">How many pieces do you want? (optional)</div>
+            <input id="targetN" type="number" min="1" step="1" placeholder="for example 24">
+          </div>
+          <div style="display:flex;align-items:flex-end">
+            <button class="pill" id="applyTarget">Show closest cuts</button>
+          </div>
+        </div>
+
+        <div class="list" id="revList"></div>
+
+        <!-- Finder card -->
+        <div class="stack">
+          <div class="finder">
+            <div class="section-label">Find near me</div>
+            <a class="btn-primary" target="_blank" href="https://www.google.com/maps/search/bakeries+near+me">Find bakeries</a>
+            <div class="alt-links">
+              <a target="_blank" href="https://www.google.com/maps/search/grocery+stores+near+me">Grocery stores</a>
+              <a target="_blank" href="https://www.google.com/maps/search/bakeware+and+pans+near+me">Bakeware & pans</a>
+              <a target="_blank" href="https://www.walmart.com/search?q=bakeware+pan">Walmart</a>
+              <a target="_blank" href="https://www.amazon.com/s?k=bakeware+pan">Amazon</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer">
+          Estimates only; confirm with your retailer or recipe. © 2025 DinnerMath. All rights reserved.
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+  
+function fmt(x){
+  return (Math.round(x*100)/100).toString()
+    .replace(/\.0+$/,'').replace(/(\.\d*[1-9])0+$/,'$1');
+}
+function fmtFractionHybrid(x){
+  if(!isFinite(x)) return '0';
+  const neg = x < 0; x = Math.abs(x);
+  const labels = {'0':'', '0.25':'1/4','0.3333':'1/3','0.5':'1/2','0.6667':'2/3','0.75':'3/4','1':'1'};
+  let whole = Math.floor(x);
+  let frac = x - whole;
+  const choices = [0,0.25,1/3,0.5,2/3,0.75,1];
+  let best = 0, err = 1e9;
+  for (const v of choices){
+    const bias = (v===1/3||v===2/3) ? -0.005 : 0;
+    const e = Math.abs(frac - v) + bias;
+    if (e < err){ best = v; err = e; }
+  }
+  if (best === 1){ whole += 1; best = 0; }
+  const t = labels[String(best)] || '';
+  const sign = neg ? '-' : '';
+  if (whole===0 && !t) return '0';
+  return (t ? (sign + (whole ? whole+' ' : '') + t) : (sign + String(whole))).trim();
+}
+function fmtFractionEighth(x){
+  if(!isFinite(x)) return '0';
+  const neg = x < 0; x = Math.abs(x);
+  let whole = Math.floor(x);
+  let eighths = Math.round((x - whole) * 8);
+  if (eighths === 8){ whole += 1; eighths = 0; }
+  const map = {0:'',1:'1/8',2:'1/4',3:'3/8',4:'1/2',5:'5/8',6:'3/4',7:'7/8'};
+  const t = map[eighths] || '';
+  const sign = neg ? '-' : '';
+  return t ? `${sign}${whole ? whole+' ' : ''}${t}`.trim() : `${sign}${whole}`;
+}
+function edgeWidthAtCrust(diameter, pieces){
+  return Math.PI * diameter / pieces;
+}
+function rulerSVG(valueInches){
+  const span = Math.min(Math.max(Math.ceil(valueInches),3),6);
+  const ppi = 96, W = span*ppi, H = 48;
+  let out = `<svg class="ruler" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+  out += `<rect x="0" y="0" width="${W}" height="${H}" fill="#fff" stroke="#e5e7eb"/>`;
+  for(let i=0;i<=span*8;i++){
+    const x = i*(ppi/8), tall=(i%8===0), mid=(i%4===0);
+    const h = tall?24:(mid?16:10);
+    out += `<line x1="${x}" y1="0" x2="${x}" y2="${h}" stroke="#111" stroke-width="1"/>`;
+    if(tall){ out += `<text x="${x+2}" y="38" font-size="11" fill="#333">${(i/8).toString().replace(/\.0$/,'')}"</text>`; }
+  }
+  const mx = Math.max(0,Math.min(valueInches,span))*ppi;
+  out += `<polygon points="${mx},28 ${mx-6},44 ${mx+6},44" fill="#ff6b00"/>`;
+  out += `</svg>`;
+  return out;
+}
+
+// ----- State & element refs -----
+  let make = null;
+  let isRound = false;
+  let presetRect = null;   // {L,W} or null
+  let presetRound = null;  // {D} or null
+
+let currentNoun = 'slices';
+function setNoun(n){ currentNoun = (n==='pieces'||n==='slices') ? n : 'slices'; }
+
+
+  const byId = (id)=>document.getElementById(id);
+  const $panL = byId('panL');
+  const $panW = byId('panW');
+  const $panD = byId('panD');
+const $mini = byId('miniGrid');
+  const $legend = byId('legend');
+  const $bigTotal = byId('bigTotal');
+  const $bigMeta = byId('bigMeta');
+  const $list = byId('optionsList');
+  const $target = byId('targetN');
+  const $applyTarget = byId('applyTarget');
+  const $revList = byId('revList');
+function setRound(on){
+    isRound = on;
+    byId('roundInputs').style.display = on ? '' : 'none';
+    byId('rectInputs').style.display = on ? 'none' : '';
+  }
+  function clear(sel){ sel.innerHTML=''; }
+  function makeGrid(rows, cols){
+    clear($mini);
+    if(rows<=0||cols<=0){ $legend.style.display='none'; return; }
+    $mini.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        const d = document.createElement('div');
+        d.className = 'cell' + ((r===0||c===0||r===rows-1||c===cols-1)?' edge':'');
+        $mini.appendChild(d);
+      }
+    }
+    $legend.style.display = '';
+    $legend.textContent = `${rows} rows × ${cols} columns`;
+  }
+
+  // Candidate generation
+  function cutOptionsRect(L,W){
+    const out = [];
+    for(let rows=1; rows<=20; rows++){
+      for(let cols=1; cols<=20; cols++){
+        const pieceL = L/cols, pieceW = W/rows;
+        const minSide = Math.min(pieceL, pieceW);
+        const maxSide = Math.max(pieceL, pieceW);
+        const ok = minSide>=1 && maxSide<=5.5;
+        if(ok){
+          out.push({
+            rows, cols,
+            pieces: rows*cols,
+            pieceL, pieceW,
+            aspect: (Math.max(pieceL,pieceW)/Math.min(pieceL,pieceW))
+          });
+        }
+      }
+    }
+    out.sort((a,b)=>{
+      const score = (o)=>{
+        const s1 = Math.abs(Math.max(o.pieceL,o.pieceW)-2.0) + Math.abs(Math.min(o.pieceL,o.pieceW)-2.0);
+        const s2 = Math.abs(o.aspect-1);
+        const s3 = Math.abs(o.pieces-24)/24;
+        return s1*2 + s2*1.5 + s3*0.8;
+      };
+      return score(a)-score(b);
+    });
+    const seen = new Set();
+    const picked = [];
+    for(const o of out){
+      if(!seen.has(o.pieces)){
+        seen.add(o.pieces);
+        picked.push(o);
+      }
+      if(picked.length>=30) break; // cap unique counts to keep list reasonable // allow more unique piece counts
+    }
+    return picked;
+  }
+
+  function cutOptionsRound(D){
+  const out = [];
+  [6,8,10,12,14,16].forEach(p=>{
+    out.push({pieces:p, rows:1, cols:p, pieceL:360/p, pieceW:0, kind:'wedge', angle:360/p});
+  });
+  out.sort((a,b)=>Math.abs(a.pieces-12)-Math.abs(b.pieces-12));
+  const seen=new Set(), picked=[];
+  for(const o of out){
+    if(!seen.has(o.pieces)){ seen.add(o.pieces); picked.push(o); }
+    if(picked.length>=12) break;
+  }
+  return picked;
+}
+    // Preference helpers
+  function panBucket(L,W){
+    const a = Math.min(L,W), b = Math.max(L,W);
+    const near = (x,y,t=0.4)=>Math.abs(x-y)<=t;
+    if(near(a,8)&&near(b,8))   return '8x8';
+    if(near(a,9)&&near(b,13))  return '9x13';
+    if(near(a,13)&&near(b,18)) return '13x18';
+    return 'other';
+  }
+  function preferredPieces(make, bucket){
+    const map = {
+      '9x13': { brownies:[24,30,35], 'sheet-cake':[18,24,54], casserole:[12,15,20] },
+      '8x8':  { brownies:[16,9,25],  'sheet-cake':[9,12,16],  casserole:[9,12,16]  },
+      '13x18':{ brownies:[48,40,56], 'sheet-cake':[36,48,96], casserole:[24,30,35] }
+    };
+    return (map[bucket] && map[bucket][make]) ? map[bucket][make] : [];
+  }
+  function reorderByPreference(opts, make, L, W){
+    const pref = preferredPieces(make, panBucket(L,W));
+    if(!pref.length) return opts;
+    const pos = o => { const i = pref.indexOf(o.pieces); return i === -1 ? 999 : i; };
+    return [...opts].sort((a,b)=> pos(a)-pos(b));
+  }
+  function hasRC(opts, r, c){ return opts.some(o => o.rows===r && o.cols===c); }
+  function pushRC(opts, r, c, L, W){
+    if (r<1||c<1) return;
+    const pieceL = L/c, pieceW = W/r;
+    const minSide = Math.min(pieceL, pieceW);
+    const maxSide = Math.max(pieceL, pieceW);
+    if (minSide>=1 && maxSide<=5.5 && !hasRC(opts,r,c)) {
+      opts.push({ rows:r, cols:c, pieces:r*c, pieceL, pieceW, aspect:(Math.max(pieceL,pieceW)/Math.min(pieceL,pieceW)) });
+    }
+  }
+  function ensurePreferredPresent(make, L, W, opts){
+    if (make!=='casserole') return;
+    const a = Math.round(Math.max(L,W)), b = Math.round(Math.min(L,W));
+    if (a===13 && b===9){ pushRC(opts,3,4,L,W); pushRC(opts,3,5,L,W); pushRC(opts,4,5,L,W); }
+    if (a===8  && b===8){ pushRC(opts,3,3,L,W); pushRC(opts,3,4,L,W); }
+  }
+
+  function labelForPanRect(L,W){ return `${Math.round(Math.max(L,W))} x ${Math.round(Math.min(L,W))} in`; }
+  function labelForPanRound(D){ return `Round ${Math.round(D)} in`; }
+
+  // ----- Summary/paint -----
+  function paintSummary(pieces, meta){
+  $bigTotal.textContent = `${pieces ? pieces : 0} ${currentNoun}`;
+  $bigMeta.textContent  = meta || 'about 0 x 0 in each (0 x 0 cut)';
+}
+pieces` : '0 pieces';
+    $bigMeta.textContent = meta || 'about 0 x 0 in each (0 x 0 cut)';
+  }
+
+  function paintOptionsRect(L,W,opts){
+  clear($list);
+  if(!opts.length){ paintSummary(0, 'Enter a pan size or choose a preset.'); makeGrid(0,0); const rr=document.getElementById('round-ruler'); if(rr){ rr.innerHTML=''; } return; }
+
+  ensurePreferredPresent(make, L, W, opts);
+  const optsRanked = reorderByPreference(opts, make, L, W);
+
+  const best = optsRanked[0];
+  makeGrid(best.rows, best.cols);
+  lastPlan = {shape:'rect', L, W, D:null, rows:best.rows, cols:best.cols, pieces:best.pieces};
+
+  paintSummary(best.pieces, `about ${fmtFractionHybrid(Math.min(best.pieceL,best.pieceW))} x ${fmtFractionHybrid(Math.max(best.pieceL,best.pieceW))} in each (${best.rows} x ${best.cols} cut)`);
+  const rr = document.getElementById('round-ruler'); if(rr){ rr.innerHTML = ''; }
+
+  optsRanked.slice(0,3).forEach((o,i)=>{
+    const li = document.createElement('div');
+    li.className = 'option' + (i===0?' recommended':'');
+    li.innerHTML = `<div class="title">${o.pieces} ${currentNoun}</div>
+                    <div class="meta">about ${fmtFractionHybrid(Math.min(o.pieceL,o.pieceW))} x ${fmtFractionHybrid(Math.max(o.pieceL,o.pieceW))} in each (${o.rows} x ${o.cols} cut)</div>`;
+    li.addEventListener('click',()=>{
+      makeGrid(o.rows,o.cols);
+      lastPlan = {shape:'rect', L, W, D:null, rows:o.rows, cols:o.cols, pieces:o.pieces};
+      paintSummary(o.pieces, `about ${fmtFractionHybrid(Math.min(o.pieceL,o.pieceW))} x ${fmtFractionHybrid(Math.max(o.pieceL,o.pieceW))} in each (${o.rows} x ${o.cols} cut)`);
+      if(rr){ rr.innerHTML=''; }
+    });
+    $list.appendChild(li);
+  });
+
+  if(optsRanked.length>3){
+    const toggle = document.createElement('a');
+    toggle.href='#'; toggle.style.display='inline-block'; toggle.style.marginTop='8px';
+    toggle.textContent='See other cut options';
+    let open=false;
+    toggle.addEventListener('click',(e)=>{
+      e.preventDefault(); open=!open;
+      toggle.textContent = open ? 'Hide other cut options' : 'See other cut options';
+      if(open){
+        optsRanked.slice(3,15).forEach(o=>{
+          const li = document.createElement('div');
+          li.className = 'option';
+          li.innerHTML = `<div class="title">${o.pieces} ${currentNoun}</div>
+                          <div class="meta">about ${fmtFractionHybrid(Math.min(o.pieceL,o.pieceW))} x ${fmtFractionHybrid(Math.max(o.pieceL,o.pieceW))} in each (${o.rows} x ${o.cols} cut)</div>`;
+          li.addEventListener('click',()=>{
+            makeGrid(o.rows,o.cols);
+            lastPlan = {shape:'rect', L, W, D:null, rows:o.rows, cols:o.cols, pieces:o.pieces};
+            paintSummary(o.pieces, `about ${fmtFractionHybrid(Math.min(o.pieceL,o.pieceW))} x ${fmtFractionHybrid(Math.max(o.pieceL,o.pieceW))} in each (${o.rows} x ${o.cols} cut)`);
+            if(rr){ rr.innerHTML=''; }
+          });
+          $list.appendChild(li);
+        });
+      }else{
+        while($list.children.length>3){ $list.removeChild($list.lastChild); }
+      }
+    });
+    $list.parentNode.insertBefore(toggle, $list.nextSibling);
+  }
+}// Ensure preferred combos exist for this dish/pan
+    ensurePreferredPresent(make, L, W, opts);
+
+    // Dish-aware reorder
+    const optsRanked = reorderByPreference(opts, make, L, W);
+
+    const best = optsRanked[0];
+    makeGrid(best.rows,best.cols); lastPlan = {shape:'rect', L:L, W:W, D:null, rows:best.rows, cols:best.cols, pieces:best.pieces};
+    // removed round IIFE $bigTotal.textContent = `Cut into ${best.pieces} ${currentNoun} — edge width: ${fmtFractionEighth(edge)} in`; $bigMeta.textContent  = `about ${fmtFractionHybrid(Math.min(best.pieceL,best.pieceW))} x ${fmtFractionHybrid(Math.max(best.pieceL,best.pieceW))} in each (${best.rows} x ${best.cols} cut)`; var rr=document.getElementById('round-ruler'); if(rr){ rr.innerHTML = rulerSVG(edge); } })();
+
+    // Render first three
+    const first3 = optsRanked.slice(0,3);
+    first3.forEach((o,i)=>{
+      const li = document.createElement('div');
+      li.className = 'option' + (i===0?' recommended':'');
+      li.innerHTML = `<div class="title">${o.pieces} ${currentNoun}</div>
+                      `;
+      li.addEventListener('click',()=>{
+        makeGrid(o.rows,o.cols);
+        (function(){ const edge = edgeWidthAtCrust(D, s.o.pieces); $bigTotal.textContent = `Cut into ${o.pieces} ${currentNoun} — edge width: ${fmtFractionEighth(edge)} in`; $bigMeta.textContent  = `about ${fmtFractionHybrid(Math.min(best.pieceL,best.pieceW))} x ${fmtFractionHybrid(Math.max(best.pieceL,best.pieceW))} in each (${best.rows} x ${best.cols} cut)`; var rr=document.getElementById('round-ruler'); if(rr){ rr.innerHTML = rulerSVG(edge); } })();
+      });
+      $list.appendChild(li);
+    });
+
+    // Toggle for more
+    if(optsRanked.length > 3){
+      const toggle = document.createElement('a');
+      toggle.href = '#';
+      toggle.style.display='inline-block';
+      toggle.style.marginTop='8px';
+      toggle.textContent = 'See other cut options';
+      let open = false;
+      toggle.addEventListener('click',(e)=>{
+        e.preventDefault();
+        open = !open;
+        toggle.textContent = open ? 'Hide other cut options' : 'See other cut options';
+        if(open){
+          optsRanked.slice(3, 15).forEach(o=>{
+            const li = document.createElement('div');
+            li.className = 'option';
+            li.innerHTML = `<div class="title">${o.pieces} ${currentNoun}</div>
+                            `;
+            li.addEventListener('click',()=>{
+              makeGrid(o.rows,o.cols);
+              (function(){ const edge = edgeWidthAtCrust(D, s.o.pieces); $bigTotal.textContent = `Cut into ${o.pieces} ${currentNoun} — edge width: ${fmtFractionEighth(edge)} in`; $bigMeta.textContent  = `about ${fmtFractionHybrid(Math.min(best.pieceL,best.pieceW))} x ${fmtFractionHybrid(Math.max(best.pieceL,best.pieceW))} in each (${best.rows} x ${best.cols} cut)`; var rr=document.getElementById('round-ruler'); if(rr){ rr.innerHTML = rulerSVG(edge); } })();
+            });
+            $list.appendChild(li);
+          });
+        }else{
+          while($list.children.length > 3){ $list.removeChild($list.lastChild); }
+        }
+      });
+      $list.parentNode.insertBefore(toggle, $list.nextSibling);
+    }
+  }
+
+  function paintOptionsRound(D,opts){
+  clear($list);
+  makeGrid(0,0);
+
+  const want=[8,10,12], map=new Map(opts.map(o=>[o.pieces,o]));
+  const ordered=[...want.map(n=>map.get(n)).filter(Boolean), ...opts.filter(o=>!want.includes(o.pieces))];
+
+  const best = ordered[0] || opts[0];
+  const edge = edgeWidthAtCrust(D, best.pieces);
+  lastPlan = {shape:'round', L:null, W:null, D, rows:null, cols:null, pieces:best.pieces};
+
+  $bigTotal.textContent = `Cut into ${best.pieces} ${currentNoun} — edge width: ${fmtFractionEighth(edge)} in`;
+  $bigMeta.textContent  = `Readable label: ${fmtFractionHybrid(edge)} in`;
+  const rr = document.getElementById('round-ruler'); if(rr){ rr.innerHTML = rulerSVG(edge); }
+
+  ordered.slice(0,3).forEach((o,i)=>{
+    const li = document.createElement('div');
+    li.className = 'option' + (i===0?' recommended':''); 
+    li.innerHTML = `<div class="title">${o.pieces} ${currentNoun}</div>
+                    <div class="meta">edge width: ${fmtFractionEighth(edgeWidthAtCrust(D,o.pieces))} in (round ${fmt(D)} in pan)</div>`;
+    li.addEventListener('click', ()=>{
+      const e = edgeWidthAtCrust(D, o.pieces);
+      lastPlan = {shape:'round', L:null, W:null, D, rows:null, cols:null, pieces:o.pieces};
+      $bigTotal.textContent = `Cut into ${o.pieces} ${currentNoun} — edge width: ${fmtFractionEighth(e)} in`;
+      $bigMeta.textContent  = `Readable label: ${fmtFractionHybrid(e)} in`;
+      if(rr){ rr.innerHTML = rulerSVG(e); }
+    });
+    $list.appendChild(li);
+  });
+
+  if(ordered.length>3){
+    const toggle = document.createElement('a');
+    toggle.href='#'; toggle.style.display='inline-block'; toggle.style.marginTop='8px';
+    toggle.textContent='See other cut options';
+    let open=false;
+    toggle.addEventListener('click',(e)=>{
+      e.preventDefault(); open=!open;
+      toggle.textContent = open ? 'Hide other cut options' : 'See other cut options';
+      if(open){
+        ordered.slice(3).forEach(o=>{
+          const li = document.createElement('div');
+          li.className = 'option';
+          li.innerHTML = `<div class="title">${o.pieces} ${currentNoun}</div>
+                          <div class="meta">edge width: ${fmtFractionEighth(edgeWidthAtCrust(D,o.pieces))} in</div>`;
+          li.addEventListener('click', ()=>{
+            const e = edgeWidthAtCrust(D, o.pieces);
+            lastPlan = {shape:'round', L:null, W:null, D, rows:null, cols:null, pieces:o.pieces};
+            $bigTotal.textContent = `Cut into ${o.pieces} ${currentNoun} — edge width: ${fmtFractionEighth(e)} in`;
+            $bigMeta.textContent  = `Readable label: ${fmtFractionHybrid(e)} in`;
+            if(rr){ rr.innerHTML = rulerSVG(e); }
+          });
+          $list.appendChild(li);
+        });
+      }else{
+        while($list.children.length>3){ $list.removeChild($list.lastChild); }
+      }
+    });
+    $list.parentNode.insertBefore(toggle, $list.nextSibling);
+  }
+};
+
+  $bigTotal.textContent = `Cut into ${best.pieces} ${currentNoun} — edge width: ${fmtFractionEighth(edge)} in`;
+  $bigMeta.textContent  = `Readable label: ${fmtFractionHybrid(edge)} in`;
+  const rr = document.getElementById('round-ruler'); if(rr){ rr.innerHTML = rulerSVG(edge); }
+
+  const first3 = ordered.slice(0,3);
+  first3.forEach((o,i)=>{
+    const li = document.createElement('div');
+    li.className = 'option' + (i===0?' recommended':'');
+    li.innerHTML = `<div class="title">${o.pieces} ${currentNoun}</div>
+`;
+    li.addEventListener('click', ()=>{
+      const e = edgeWidthAtCrust(D, s.o.pieces);
+      lastPlan = {shape:'round', L:null, W:null, D, rows:null, cols:null, pieces:o.pieces};
+      $bigTotal.textContent = `Cut into ${o.pieces} ${currentNoun} — edge width: ${fmtFractionEighth(e)} in`;
+      $bigMeta.textContent  = `Readable label: ${fmtFractionHybrid(e)} in`;
+      if(rr){ rr.innerHTML = rulerSVG(e); }
+    });
+    $list.appendChild(li);
+  });
+
+  if(ordered.length>3){
+    const toggle = document.createElement('a');
+    toggle.href='#'; toggle.style.display='inline-block'; toggle.style.marginTop='8px';
+    toggle.textContent='See other cut options';
+    let open=false;
+    toggle.addEventListener('click',(e)=>{
+      e.preventDefault();
+      open=!open;
+      toggle.textContent = open ? 'Hide other cut options' : 'See other cut options';
+      if(open){
+        ordered.slice(3).forEach(o=>{
+          const li = document.createElement('div');
+          li.className = 'option';
+          li.innerHTML = `<div class="title">${o.pieces} ${currentNoun}</div>
+`;
+          li.addEventListener('click', ()=>{
+            const e = edgeWidthAtCrust(D, s.o.pieces);
+            lastPlan = {shape:'round', L:null, W:null, D, rows:null, cols:null, pieces:o.pieces};
+            $bigTotal.textContent = `Cut into ${o.pieces} ${currentNoun} — edge width: ${fmtFractionEighth(e)} in`;
+            $bigMeta.textContent  = `Readable label: ${fmtFractionHybrid(e)} in`;
+            if(rr){ rr.innerHTML = rulerSVG(e); }
+          });
+          $list.appendChild(li);
+        });
+      }else{
+        while($list.children.length>3){ $list.removeChild($list.lastChild); }
+      }
+    });
+    $list.parentNode.insertBefore(toggle, $list.nextSibling);
+  }
+};
+    $bigTotal.textContent = `Cut into ${best.pieces} ${currentNoun} — edge width: ${fmtFractionEighth(edge)} in`;
+    $bigMeta.textContent  = `about ${fmtFractionHybrid(Math.min(best.pieceL,best.pieceW))} x ${fmtFractionHybrid(Math.max(best.pieceL,best.pieceW))} in each (${best.rows} x ${best.cols} cut)`;
+    const rr = document.getElementById('round-ruler'); if(rr){ rr.innerHTML = rulerSVG(edge); }
+  })();
+
+    const first3 = ordered.slice(0,3);
+    first3.forEach((o,i)=>{
+      const li = document.createElement('div');
+      li.className = 'option' + (i===0?' recommended':'');
+      li.innerHTML = `<div class="title">${o.pieces} ${currentNoun}</div>
+`;
+      li.addEventListener('click', ()=>{
+  makeGrid(o.rows,o.cols);
+  lastPlan = {shape:'rect', L:L, W:W, D:null, rows:o.rows, cols:o.cols, pieces:o.pieces};
+  $bigTotal.textContent = `${o.pieces} ${currentNoun}`;
+  $bigMeta.textContent  = `about ${fmtFractionHybrid(Math.min(o.pieceL,o.pieceW))} x ${fmtFractionHybrid(Math.max(o.pieceL,o.pieceW))} in each (${o.rows} x ${o.cols} cut)`;
+});
+      $list.appendChild(li);
+    });
+
+    if(ordered.length>3){
+      const toggle = document.createElement('a');
+      toggle.href='#'; toggle.style.display='inline-block'; toggle.style.marginTop='8px';
+      toggle.textContent='See other cut options';
+      let open=false;
+      toggle.addEventListener('click',(e)=>{
+        e.preventDefault();
+        open=!open;
+        toggle.textContent = open ? 'Hide other cut options' : 'See other cut options';
+        if(open){
+          ordered.slice(3).forEach(o=>{
+            const li = document.createElement('div');
+            li.className = 'option';
+            li.innerHTML = `<div class="title">${o.pieces} ${currentNoun}</div>
+`;
+            li.addEventListener('click', ()=>{
+  makeGrid(o.rows,o.cols);
+  lastPlan = {shape:'rect', L:L, W:W, D:null, rows:o.rows, cols:o.cols, pieces:o.pieces};
+  $bigTotal.textContent = `${o.pieces} ${currentNoun}`;
+  $bigMeta.textContent  = `about ${fmtFractionHybrid(Math.min(o.pieceL,o.pieceW))} x ${fmtFractionHybrid(Math.max(o.pieceL,o.pieceW))} in each (${o.rows} x ${o.cols} cut)`;
+});
+            $list.appendChild(li);
+          });
+        }else{
+          while($list.children.length>3){ $list.removeChild($list.lastChild); }
+        }
+      });
+      $list.parentNode.insertBefore(toggle, $list.nextSibling);
+    }
+  }
+
+  function afterPanUpdate(){
+    try{
+      const el = document.getElementById('status-pan');
+      if(!el) return;
+
+      if(isRound){
+        const typedD = parseFloat(($panD||{}).value||'0');
+        const D = typedD || (presetRound ? presetRound.D : 0);
+        el.textContent = D ? `Selected pan: ${labelForPanRound(D)}` : 'Selected pan: —';
+      }else{
+        // Rectangle: show typed order when both fields provided;
+        // otherwise keep normalized preset label.
+        const typedL = parseFloat(($panL||{}).value||'0');
+        const typedW = parseFloat(($panW||{}).value||'0');
+        const L = (typedL && typedW) ? typedL : (presetRect ? presetRect.L : 0);
+        const W = (typedL && typedW) ? typedW : (presetRect ? presetRect.W : 0);
+
+        if (typedL && typedW){
+          el.textContent = `Selected pan: ${fmt(typedL)} x ${fmt(typedW)} in`;
+        } else {
+          el.textContent = (L && W) ? `Selected pan: ${labelForPanRect(L,W)}` : 'Selected pan: —';
+        }
+      }
+    }catch(e){}
+  }
+
+  // ----- Reverse (target pieces) -----
+  function showClosestCuts(target){
+    $revList.innerHTML='';
+    if(!target || target<1) return;
+    if(isRound){
+      const typedD = parseFloat(($panD||{}).value||'0');
+      const D = typedD || (presetRound ? presetRound.D : 0);
+      if(!D) return;
+      const opts = cutOptionsRound(D);
+      const scored = opts.map(o=>({o, diff: Math.abs(o.pieces-target)})).sort((a,b)=>a.diff-b.diff).slice(0,3);
+      scored.forEach(s=>{
+        const item = document.createElement('div');
+        item.className='option';
+        item.innerHTML = `<div class="title">Closest: ${s.o.pieces} ${currentNoun}</div>
+`;
+        $revList.appendChild(item);
+      });
+    }else{
+      const typedL = parseFloat(($panL||{}).value||'0');
+      const typedW = parseFloat(($panW||{}).value||'0');
+      const L = (typedL && typedW) ? typedL : (presetRect ? presetRect.L : 0);
+      const W = (typedL && typedW) ? typedW : (presetRect ? presetRect.W : 0);
+      if(!L || !W) return;
+      const opts = cutOptionsRect(L,W);
+      const scored = opts.map(o=>({o, diff: Math.abs(o.pieces-target)})).sort((a,b)=>a.diff-b.diff).slice(0,3);
+      scored.forEach(s=>{
+        const item = document.createElement('div');
+        item.className='option';
+        item.innerHTML = `<div class="title">${s.diff===0? "Exact" : "Closest"}: ${s.o.pieces} pieces — ${fmtFractionHybrid(Math.min(s.o.pieceL,s.o.pieceW))} x ${fmtFractionHybrid(Math.max(s.o.pieceL,s.o.pieceW))} in</div>
+                          `;
+        $revList.appendChild(item);
+      });
+    }
+  }
+
+  // ----- Compute/update -----
+  function updateFromInputs(){
+    $revList.innerHTML='';
+
+    if(isRound){
+      // Prefer typed diameter; else use presetRound
+      const typedD = parseFloat($panD.value||'0');
+      const D = typedD || (presetRound ? presetRound.D : 0);
+      if(!D){ paintSummary(0,'Set diameter or pick a preset.'); clear($list); makeGrid(0,0); afterPanUpdate(); return; }
+      const options = cutOptionsRound(D);
+      paintOptionsRound(D, options);
+      afterPanUpdate();
+      return;
+    }
+
+    // Rectangular: prefer typed L & W; else use presetRect
+    const typedL = parseFloat($panL.value||'0');
+    const typedW = parseFloat($panW.value||'0');
+    const L = (typedL && typedW) ? typedL : (presetRect ? presetRect.L : 0);
+    const W = (typedL && typedW) ? typedW : (presetRect ? presetRect.W : 0);
+
+    if(!L || !W){ paintSummary(0,'Enter a pan size or choose a preset.'); clear($list); makeGrid(0,0); afterPanUpdate(); return; }
+    let options = cutOptionsRect(L, W);
+    ensurePreferredPresent(make, L, W, options);
+    paintOptionsRect(L, W, options);
+    afterPanUpdate();
+  }
+
+  // ----- Event wiring -----
+  // Step 1 tile clicks (user-facing only)
+
+document.querySelectorAll('#tile1 .choice').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    const isRoundOn = el.dataset.shape === 'round';
+    if (el.dataset.make) make = el.dataset.make;
+    setNoun(el.dataset.noun);
+    setShape?.(isRoundOn);
+    afterPanUpdate?.();
+    const t = el.querySelector('.title')?.textContent?.trim() || '—';
+    const $sm = document.getElementById('status-make'); if ($sm) $sm.textContent = `Selected: ${t}`;
+  });
+  el.addEventListener('keydown',(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); el.click(); }});
+});document.querySelectorAll('#tile1 .choice').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    const isRoundOn = el.dataset.shape === 'round';
+    if (el.dataset.make) make = el.dataset.make;
+    setNoun(el.dataset.noun);
+    setShape(isRoundOn);
+    const t = el.querySelector('.title')?.textContent?.trim() || '—';
+    const $sm = document.getElementById('status-make'); if ($sm) $sm.textContent = `Selected: ${t}`;
+  });
+  el.addEventListener('keydown',(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); el.click(); }});
+});
+// Shape toggle wiring (customs)
+  const $shapeRect = document.getElementById('shape-rect');
+  const $shapeRound = document.getElementById('shape-round');
+
+  function setShape(isRoundOn){
+    setRound(isRoundOn); // existing function
+
+    // flip aria-pressed states
+    if(isRoundOn){
+      $shapeRound?.setAttribute('aria-pressed','true');
+      $shapeRect?.setAttribute('aria-pressed','false');
+      try{ if($panL) $panL.value=''; if($panW) $panW.value=''; }catch(e){}
+    }else{
+      $shapeRect?.setAttribute('aria-pressed','true');
+      $shapeRound?.setAttribute('aria-pressed','false');
+      try{ if($panD) $panD.value=''; }catch(e){}
+    }
+
+    updateFromInputs();
+    afterPanUpdate();
+  }
+
+  $shapeRect?.addEventListener('click', ()=> setShape(false));
+  $shapeRound?.addEventListener('click', ()=> setShape(true));
+
+  // Preset pills (existing behavior)
+  document.querySelectorAll('[data-preset]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('[data-preset]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const p = btn.getAttribute('data-preset');
+
+      // Clear any typed custom fields; compute from preset state
+      try{ $panL.value=''; $panW.value=''; $panD.value=''; }catch(e){}
+
+      if(p==='8x8'){       setRound(false); presetRect = {L:8,  W:8};  presetRound = null; setShape(false); }
+      else if(p==='9x13'){ setRound(false); presetRect = {L:13, W:9};  presetRound = null; setShape(false); }
+      else if(p==='half'){ setRound(false); presetRect = {L:18, W:13}; presetRound = null; setShape(false); }
+      else if(p==='full'){ setRound(false); presetRect = {L:26, W:18}; presetRound = null; setShape(false); }
+      else if(p==='r9'){   setRound(true);  presetRect = null;         presetRound = {D:9};  setShape(true); }
+      else if(p==='r10'){  setRound(true);  presetRect = null;         presetRound = {D:10}; setShape(true); }
+
+      updateFromInputs();
+      afterPanUpdate();
+    });
+  });
+
+  [$panL,$panW,$panD].forEach(inp=>inp.addEventListener('input',updateFromInputs));
+  $applyTarget.addEventListener('click',()=>showClosestCuts(parseInt($target.value,10)));
+
+  // Init: start blank; rectangle default visible
+  try{ $panL.value=''; $panW.value=''; $panD.value=''; }catch(e){}
+  setShape(false);
+  afterPanUpdate();
+
+  // Print
+  document.getElementById('btn-print')?.addEventListener('click', ()=> window.print());
+document.querySelectorAll('#tile1 .choice').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    const isRoundOn = el.dataset.shape === 'round';
+    if (el.dataset.make) make = el.dataset.make;
+    setNoun(el.dataset.noun);
+    setShape?.(isRoundOn);
+    afterPanUpdate?.();
+    const t = el.querySelector('.title')?.textContent?.trim() || '—';
+    const $sm = document.getElementById('status-make'); if ($sm) $sm.textContent = `Selected: ${t}`;
+  });
+  el.addEventListener('keydown',(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); el.click(); }});
+});
+})();</script>
+</body>
+</html>
